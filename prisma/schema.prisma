@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL") 
+}
+
+model Brand {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products  Product[]
+}
+
+model Model {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id           Int             @id @default(autoincrement())
+  designation  String
+  brandId      Int?
+  brand        Brand?          @relation(fields: [brandId], references: [id])
+  modelId      Int?
+  model        Model?          @relation(fields: [modelId], references: [id])
+  criterion    String?
+  articleCode  String          @unique
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  inventory    Inventory?
+  prices       Price[]
+  orderDetails OrderDetail[]
+  customerPrices CustomerPrice[]
+  stockMovements StockMovement[]
+}
+
+model Inventory {
+  id           Int      @id @default(autoincrement())
+  productId    Int      @unique
+  product      Product  @relation(fields: [productId], references: [id])
+  minimumStock Int      @default(0)
+  initialStock Int      @default(0)
+  currentStock Int      @default(0)
+  stockAlert   Boolean  @default(false)
+  lastUpdated  DateTime @default(now()) @updatedAt
+}
+
+model Price {
+  id                  Int      @id @default(autoincrement())
+  productId           Int
+  product             Product  @relation(fields: [productId], references: [id])
+  unitPriceWholesale  Float
+  unitPriceRetail     Float
+  validFrom           DateTime
+  validTo             DateTime?
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+  customerPrices CustomerPrice[]
+}
+
+model Order {
+  id           Int           @id @default(autoincrement())
+  userId       Int
+  user         User          @relation(fields: [userId], references: [id])
+  orderDate    DateTime      @default(now())
+  totalAmount  Float
+  status       OrderStatus   @default(pending)
+  orderDetails OrderDetail[]
+}
+
+model OrderDetail {
+  id          Int     @id @default(autoincrement())
+  orderId     Int
+  order       Order   @relation(fields: [orderId], references: [id])
+  productId   Int
+  product     Product @relation(fields: [productId], references: [id])
+  quantity    Int
+  unitPrice   Float
+  totalPrice  Float
+}
+
+model CustomerPrice {
+  id                  Int      @id @default(autoincrement())
+  productId           Int
+  product             Product  @relation(fields: [productId], references: [id])
+  userId              Int
+  user                User     @relation(fields: [userId], references: [id])
+  unitPriceWholesale  Float
+  unitPriceRetail     Float
+  validFrom           DateTime
+  validTo             DateTime?
+
+  @@unique([productId, userId])
+}
+
+model StockMovement {
+  id           Int      @id @default(autoincrement())
+  productId    Int
+  product      Product  @relation(fields: [productId], references: [id])
+  movementType MovementType
+  quantity     Int
+  movementDate DateTime @default(now())
+}
+
+enum OrderStatus {
+  pending
+  completed
+  cancelled
+}
+
+enum MovementType {
+  in
+  out
+}
